@@ -32,7 +32,7 @@ remove(filename);
 + 根据接收到的mode处理不同命令
 + 从网络sockfd中读取与从文件中读取不同，如果读取少于请求的size会阻塞等待数据，所以需要做不同处理
 ### 截图
-![](1.png)
+![](<img src="1.png" width="50% height="50%" />)
 ![](2.png)
 
 
