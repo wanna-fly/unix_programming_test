@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Unix test上机作业2017/12/08
 Unix Network Programming volume1
 
@@ -21,3 +22,7 @@ this is a simple chat room wrote in C Language by socket ( login through usernam
 
 ### 感想
 程序不难但是费了不少时间，发现自己对于C语言中输入输出，字符串操作等许多函数实现不太了解，中间出现很多奇怪的bug，决定拾起C语言好好学一学。
+=======
+# unix_programming_test
+about Socket / TCP in C language, and also store my test code
+>>>>>>> 76af2e7eab3f6355bb04e5588f703fe734d29143
