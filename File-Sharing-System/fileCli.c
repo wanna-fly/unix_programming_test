@@ -123,7 +123,7 @@ void del(char *path, int sockfd, char *buf){
 		printf("file del successfluly!\n");
 	}
 	else if(exist == 2){
-		printf("del error!\n");
+		printf("del error:NO ACCESS; because it's not your file!\n");
 	}
 	else{
 		printf("no such file found!\n");

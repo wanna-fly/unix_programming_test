@@ -12,6 +12,23 @@
 #include	<dirent.h>
 #include	<errno.h>
 #include	<fcntl.h>
+struct my_stat{
+	char file_name[10];
+	int u_id;
+};
+int my_index[5] = {0};
+int i_file=0;
+
+struct my_stat st[5];
+int get_uid(const char *filename){
+	int k = 0;
+	for(; k <= i_file; k++){
+		if(strcmp(st[k].file_name, filename) == 0)
+			return st[k].u_id;
+	}
+	if(k == i_file)
+		return -1;
+}
 
 int find(const char *name){//find the file in the directory
 	DIR *dp;
@@ -35,7 +52,7 @@ int file_size(const char *path){
 	return buf.st_size;
 }
 
-void upload_handler(int sockfd, char *buf){
+void upload_handler(int sockfd, char *buf, int u_id){
 	uint8_t name_size = 0;
 	uint64_t file_size = 0;
 	char name[20];
@@ -45,6 +62,9 @@ void upload_handler(int sockfd, char *buf){
 	Read(sockfd, name, name_size);
 	name[name_size] = '\0';
 	printf("ready to recv the file:%s\n",name);
+	strcpy(st[i_file].file_name,name);
+	st[i_file].u_id = u_id;
+	i_file++;
 	int fd; int n;
 	char path[30] = "./SerData/";
 	strcat(path, name);
@@ -84,7 +104,7 @@ void list_handler(int sockfd, char *buf){
 		err_quit("can't close the dir!\n");
 }
 
-void del_handler(int sockfd, char *buf){//how to judge the access
+void del_handler(int sockfd, char *buf, int u_id){//how to judge the access
 	uint8_t name_size = 0;
 	char name[20];
 	uint8_t exist = 0;
@@ -94,12 +114,17 @@ void del_handler(int sockfd, char *buf){//how to judge the access
 	char path[30] = "./SerData/";
 	strcat(path, name);
 	if(find(name) == 1){
-		if(remove(path) == 0){
-			exist = 1;
-			printf("%s has been deleted!\n",name);
+		if(get_uid(name) != u_id)
+			exist = 2;
+		else{
+			if(remove(path) == 0){
+				exist = 1;
+				printf("%s has been deleted!\n",name);
+			}
+			else
+				exist = 3;
 		}
-		else
-			exist = 2;// no access to delete
+
 	}
 	Writen(sockfd, &exist, sizeof(exist));
 }
@@ -184,7 +209,9 @@ main(int argc, char **argv)
 
 		if (FD_ISSET(listenfd, &rset)) {	/* new client connection */
 			clilen = sizeof(cliaddr);
+			//printf("%u\n",clilen);
 			connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
+			//printf("%d accepted\n",connfd);
 #ifdef NOTDEF
 			printf("new client: %s, port %d\n",
 					Inet_ntop(AF_INET, &cliaddr.sin_addr, 4, NULL),
@@ -224,6 +251,7 @@ main(int argc, char **argv)
 							flag[i] = 0;
 							printf("one client quit\n");
 						}
+						else{
 						u=NULL;p=NULL;
 						u=strtok(buf,"/");
 						p=strtok(NULL,"/");
@@ -232,6 +260,7 @@ main(int argc, char **argv)
 							if( (strncmp(u,User[j],strlen(u)) == 0) && (strncmp(p,Password[j],strlen(p)) == 0 ) )
 							{
 								flag[i]=1;
+								my_index[i] = j;
 								printf("%s log in the system!\n",User[j]);
 								Writen(sockfd,"1",sizeof("1"));
 								bzero(buf, MAXLINE);
@@ -246,8 +275,9 @@ main(int argc, char **argv)
 								client[i]=-1;
 							}
 						}
+						}
 					}
-					if(flag[i] == 1){
+					else{
 						uint8_t mode = 0;
 					       	//if(Read(sockfd, &len, 1) < 0)//éè¦æ·»å éè¯¯å¤æ­æºå¶
 						if ( (n = Read(sockfd, &mode, sizeof(mode))) == 0) {
@@ -268,12 +298,12 @@ main(int argc, char **argv)
 								}
 								case 2:
 								{
-									upload_handler(sockfd, buf);
+									upload_handler(sockfd, buf, my_index[i]);
 									break;
 								}
 								case 3:
 								{
-									del_handler(sockfd, buf);
+									del_handler(sockfd, buf, my_index[i]);
 									break;
 								}
 								case 4:
@@ -286,10 +316,9 @@ main(int argc, char **argv)
 							//bzero(recvBuf,MAXLINE);// is recvBuf necessary?
 						}
 					}
-					
-				}
 				if (--nready <= 0)
-					break;				/* no more readable descriptors */
+					break;
+				}				/* no more readable descriptors */
 			}
 		}
 }
